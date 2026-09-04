@@ -47,7 +47,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 
-import { AppEvent, ConfigurableBase } from '../types';
+import { AppEvent } from '../types';
 
 interface AssignmentViewProps {
   people: Person[];
@@ -412,11 +412,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
               <button
                 key={day.dayId}
                 onClick={() => handleDaySelect(day.dayId)}
-                className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wider whitespace-nowrap transition-all ${
-                  isSelected
+                className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wider whitespace-nowrap transition-all ${isSelected
                     ? 'bg-[#B83A24] text-white shadow-xs font-dalek'
                     : 'text-[#64748B] hover:text-[#182535] hover:bg-[#FFFDF8] font-montserrat'
-                }`}
+                  }`}
               >
                 {day.dayName}
               </button>
@@ -451,11 +450,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
             <div className="flex items-center gap-1.5 bg-[#FAF6EC] p-1.5 rounded-2xl border border-[#EADDC7] self-start lg:self-center">
               <button
                 onClick={() => handleCarnivalCategorySelect('GAP')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  carnivalCategory === 'GAP'
+                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${carnivalCategory === 'GAP'
                     ? 'bg-[#B83A24] text-white shadow-xs font-montserrat'
                     : 'text-[#64748B] hover:text-[#182535] font-montserrat'
-                }`}
+                  }`}
               >
                 <Grid className="w-3.5 h-3.5" />
                 <span>GAP (3 Turnos + 30 Bases)</span>
@@ -463,11 +461,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
 
               <button
                 onClick={() => handleCarnivalCategorySelect('GT')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  carnivalCategory === 'GT'
+                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${carnivalCategory === 'GT'
                     ? 'bg-[#182535] text-white shadow-xs font-montserrat'
                     : 'text-[#64748B] hover:text-[#182535] font-montserrat'
-                }`}
+                  }`}
               >
                 <Shield className="w-3.5 h-3.5" />
                 <span>GT (5 Turnos)</span>
@@ -475,11 +472,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
 
               <button
                 onClick={() => handleCarnivalCategorySelect('MESA')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  carnivalCategory === 'MESA'
+                className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${carnivalCategory === 'MESA'
                     ? 'bg-[#C87F17] text-white shadow-xs font-montserrat'
                     : 'text-[#64748B] hover:text-[#182535] font-montserrat'
-                }`}
+                  }`}
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>MESA (Flexible)</span>
@@ -490,11 +486,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
           {/* Visual Blueprint Diagram */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1 text-xs font-montserrat">
             <div
-              className={`p-4 rounded-2xl border transition-all ${
-                carnivalCategory === 'GT'
+              className={`p-4 rounded-2xl border transition-all ${carnivalCategory === 'GT'
                   ? 'bg-[#FAF6EC] border-[#182535] shadow-2xs'
                   : 'bg-[#FFFDF8] border-[#EADDC7] text-[#64748B]'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between font-bold text-[#182535] mb-2">
                 <span className="flex items-center gap-1.5 text-[#182535]">
@@ -530,11 +525,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
             </div>
 
             <div
-              className={`p-4 rounded-2xl border transition-all ${
-                carnivalCategory === 'GAP'
+              className={`p-4 rounded-2xl border transition-all ${carnivalCategory === 'GAP'
                   ? 'bg-[#FAF6EC] border-[#B83A24] shadow-2xs'
                   : 'bg-[#FFFDF8] border-[#EADDC7] text-[#64748B]'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between font-bold text-[#B83A24] mb-2">
                 <span className="flex items-center gap-1.5 text-[#B83A24]">
@@ -565,11 +559,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
             </div>
 
             <div
-              className={`p-4 rounded-2xl border transition-all ${
-                carnivalCategory === 'MESA'
+              className={`p-4 rounded-2xl border transition-all ${carnivalCategory === 'MESA'
                   ? 'bg-[#FEF8EC] border-[#C87F17] shadow-2xs'
                   : 'bg-[#FFFDF8] border-[#EADDC7] text-[#64748B]'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between font-bold text-[#C87F17] mb-2">
                 <span className="flex items-center gap-1.5 text-[#C87F17]">
@@ -624,19 +617,17 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                   setSelectedShiftId(shift.id);
                   setSelectedBaseNumber(null);
                 }}
-                className={`min-h-[40px] flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  isSelected
+                className={`min-h-[40px] flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${isSelected
                     ? 'bg-[#B83A24] text-white border-[#B83A24] shadow-xs font-montserrat'
                     : 'bg-[#FAF6EC] text-[#64748B] border-[#EADDC7] hover:text-[#182535] hover:bg-[#F3EEDC] font-montserrat'
-                }`}
+                  }`}
               >
                 <Clock className="w-3.5 h-3.5" />
                 <span className="font-bold">{shift.name}</span>
                 <span className="font-mono text-[11px] opacity-80">({shift.label})</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-[#EAE0CA] text-[#475569]'
-                  }`}
+                  className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-[#EAE0CA] text-[#475569]'
+                    }`}
                 >
                   {shiftAssignCount}
                 </span>
@@ -712,13 +703,12 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            req.groupType === 'GT'
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${req.groupType === 'GT'
                               ? 'bg-[#FDF2EE] text-[#B83A24] border border-[#F6C7BA]'
                               : req.groupType === 'GAP'
-                              ? 'bg-[#FEF8EC] text-[#C87F17] border border-[#FDE68A]'
-                              : 'bg-purple-50 text-purple-700 border border-purple-200'
-                          }`}
+                                ? 'bg-[#FEF8EC] text-[#C87F17] border border-[#FDE68A]'
+                                : 'bg-purple-50 text-purple-700 border border-purple-200'
+                            }`}
                         >
                           {req.groupType === 'GT' ? `GT → ${req.gtSubTeam}` : req.groupType}
                         </span>
@@ -748,9 +738,8 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                       </div>
                       <div className="w-full h-2 rounded-full bg-[#FAF6EC] overflow-hidden border border-[#EADDC7]">
                         <div
-                          className={`h-full transition-all duration-300 ${
-                            isFull ? 'bg-emerald-500' : 'bg-[#B83A24]'
-                          }`}
+                          className={`h-full transition-all duration-300 ${isFull ? 'bg-emerald-500' : 'bg-[#B83A24]'
+                            }`}
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
@@ -786,11 +775,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                     <button
                       onClick={() => handleOpenAssignModal(req)}
                       disabled={isFull}
-                      className={`min-h-[38px] w-full px-3 py-1.5 rounded-xl text-xs font-bold font-montserrat flex items-center justify-center gap-1.5 transition-all ${
-                        isFull
+                      className={`min-h-[38px] w-full px-3 py-1.5 rounded-xl text-xs font-bold font-montserrat flex items-center justify-center gap-1.5 transition-all ${isFull
                           ? 'bg-[#FAF6EC] text-[#94A3B8] border border-[#EADDC7] cursor-not-allowed'
                           : 'bg-[#182535] hover:bg-[#2A3F55] text-white shadow-2xs'
-                      }`}
+                        }`}
                     >
                       <UserCheck className="w-3.5 h-3.5" />
                       <span>{isFull ? 'Cupo Completo' : 'Asignar Personas'}</span>
@@ -847,26 +835,24 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
               return (
                 <div
                   key={base.id}
-                  className={`bg-[#FFFDF8] border rounded-2xl p-4 flex flex-col justify-between transition-all relative shadow-2xs ${
-                    isSpecial
+                  className={`bg-[#FFFDF8] border rounded-2xl p-4 flex flex-col justify-between transition-all relative shadow-2xs ${isSpecial
                       ? 'border-[#E5A12E] bg-[#FEF8EC]'
                       : isFull
-                      ? 'border-[#BBF7D0] bg-[#F0FDF4]'
-                      : baseAssignments.length > 0
-                      ? 'border-[#EADDC7] bg-[#FAF6EC]'
-                      : 'border-[#EADDC7] hover:border-[#B83A24]'
-                  }`}
+                        ? 'border-[#BBF7D0] bg-[#F0FDF4]'
+                        : baseAssignments.length > 0
+                          ? 'border-[#EADDC7] bg-[#FAF6EC]'
+                          : 'border-[#EADDC7] hover:border-[#B83A24]'
+                    }`}
                 >
                   <div>
                     {/* Header of Base Card */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${
-                            isSpecial
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${isSpecial
                               ? 'bg-[#FEF8EC] border border-[#E5A12E]/50 text-[#C87F17]'
                               : 'bg-[#FAF6EC] border border-[#EADDC7] text-[#182535]'
-                          }`}
+                            }`}
                         >
                           {isSpecial ? '★' : base.id}
                         </span>
@@ -881,13 +867,12 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                       </div>
 
                       <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                          isFull
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${isFull
                             ? 'bg-[#F0FDF4] text-[#16A34A] border border-[#BBF7D0]'
                             : baseAssignments.length > 0
-                            ? 'bg-[#FDF2EE] text-[#B83A24] border border-[#F6C7BA]'
-                            : 'bg-[#FAF6EC] text-[#64748B] border border-[#EADDC7]'
-                        }`}
+                              ? 'bg-[#FDF2EE] text-[#B83A24] border border-[#F6C7BA]'
+                              : 'bg-[#FAF6EC] text-[#64748B] border border-[#EADDC7]'
+                          }`}
                       >
                         {baseAssignments.length} / {base.defaultCapacity}
                       </span>
@@ -936,11 +921,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                     <button
                       onClick={() => handleOpenAssignModal(undefined, base.id)}
                       disabled={isFull}
-                      className={`min-h-[40px] w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                        isFull
+                      className={`min-h-[40px] w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${isFull
                           ? 'bg-[#FAF6EC] text-[#94A3B8] cursor-not-allowed border border-[#EADDC7]'
                           : 'bg-[#B83A24] hover:bg-[#9E2F1B] text-white shadow-2xs'
-                      }`}
+                        }`}
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>{isFull ? 'Base Completa' : 'Asignar a Base'}</span>
@@ -1188,11 +1172,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                                       : [...prev, fn.name]
                                   );
                                 }}
-                                className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${
-                                  isChecked
+                                className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${isChecked
                                     ? 'bg-[#182535] text-white border-[#182535]'
                                     : 'bg-[#FFFDF8] text-[#475569] border-[#E2D6BC] hover:border-[#182535]'
-                                }`}
+                                  }`}
                               >
                                 {isChecked ? (
                                   <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -1257,20 +1240,19 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                 </span>
                 <h3 className="text-lg sm:text-xl font-bold text-[#182535] font-dalek">
                   {activeRequirement
-                    ? `ASIGNAR A: ${
-                        activeRequirement.groupType === 'GT'
-                          ? `GT ${activeRequirement.gtSubTeam}`
-                          : activeRequirement.groupType
-                      }`
+                    ? `ASIGNAR A: ${activeRequirement.groupType === 'GT'
+                      ? `GT ${activeRequirement.gtSubTeam}`
+                      : activeRequirement.groupType
+                    }`
                     : selectedBaseNumber !== null
-                    ? `ASIGNAR A ${getBaseDisplayName(selectedBaseNumber).toUpperCase()}`
-                    : `ASIGNAR A ${activeShift.name}`}
+                      ? `ASIGNAR A ${getBaseDisplayName(selectedBaseNumber).toUpperCase()}`
+                      : `ASIGNAR A ${activeShift.name}`}
                 </h3>
                 {activeRequirement && (
                   <p className="text-xs text-[#64748B] mt-0.5">
                     Cupo objetivo: <b>{activeRequirement.capacity} personas</b> •{' '}
                     {activeRequirement.specificFunctions &&
-                    activeRequirement.specificFunctions.length > 0 ? (
+                      activeRequirement.specificFunctions.length > 0 ? (
                       <span>
                         Filtro de funciones activas:{' '}
                         <b>{activeRequirement.specificFunctions.join(' · ')}</b>
@@ -1333,11 +1315,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                       return (
                         <div
                           key={person.id}
-                          className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                            isSelected
+                          className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected
                               ? 'bg-[#FEF8EC] border-[#B83A24] shadow-xs'
                               : 'bg-[#FFFDF8] border-[#EADDC7] hover:border-[#B83A24]/50'
-                          }`}
+                            }`}
                         >
                           <div>
                             <div className="flex items-center gap-2">
@@ -1345,11 +1326,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                                 {person.name}
                               </span>
                               <span
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                  person.primaryType === 'GT'
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${person.primaryType === 'GT'
                                     ? 'bg-[#FDF2EE] text-[#B83A24]'
                                     : 'bg-[#FEF8EC] text-[#C87F17]'
-                                }`}
+                                  }`}
                               >
                                 {person.gtSubTeam ? `GT: ${person.gtSubTeam}` : person.primaryType}
                               </span>
@@ -1376,11 +1356,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
                                   return (
                                     <span
                                       key={i}
-                                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                        isMatchingReq
+                                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${isMatchingReq
                                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                           : 'bg-[#FAF6EC] text-[#475569] border border-[#EADDC7]'
-                                      }`}
+                                        }`}
                                     >
                                       {f}
                                     </span>

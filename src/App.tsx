@@ -145,6 +145,8 @@ export default function App() {
           <>
             {currentTab === 'dashboard' && (
               <DashboardView
+                events={events}
+                bases={bases}
                 shifts={shifts}
                 people={people}
                 assignments={assignments}
