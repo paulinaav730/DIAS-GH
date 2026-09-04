@@ -7,6 +7,9 @@ import {
   CurrentUser,
   GroupFunction,
   ShiftRequirement,
+  ConfigurableShift,
+  AppEvent,
+  ConfigurableBase,
 } from './types';
 import {
   subscribeToPeople,
@@ -15,6 +18,9 @@ import {
   subscribeToAttendances,
   subscribeToFunctions,
   subscribeToRequirements,
+  subscribeToShifts,
+  subscribeToEvents,
+  subscribeToBases,
 } from './services/storageService';
 import { Navbar, TabType } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
@@ -26,6 +32,7 @@ import { AttendanceView } from './components/AttendanceView';
 import { FoodView } from './components/FoodView';
 import { SettingsModal } from './components/SettingsModal';
 import { StaffMyDiasView } from './components/StaffMyDiasView';
+import { ConfigView } from './components/ConfigView';
 import { LoginModal } from './components/LoginModal';
 import { ExcelImportModal } from './components/ExcelImportModal';
 import { ShieldCheck, UserCheck } from 'lucide-react';
@@ -40,6 +47,9 @@ export default function App() {
   const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
   const [functions, setFunctions] = useState<GroupFunction[]>([]);
   const [requirements, setRequirements] = useState<ShiftRequirement[]>([]);
+  const [shifts, setShifts] = useState<ConfigurableShift[]>([]);
+  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [bases, setBases] = useState<ConfigurableBase[]>([]);
 
   // Current session user: defaults to Admin (DIAS2026) or stored session
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
@@ -72,6 +82,9 @@ export default function App() {
     const unsubAttendance = subscribeToAttendances(setAttendances);
     const unsubFunctions = subscribeToFunctions(setFunctions);
     const unsubRequirements = subscribeToRequirements(setRequirements);
+    const unsubShifts = subscribeToShifts(setShifts);
+    const unsubEvents = subscribeToEvents(setEvents);
+    const unsubBases = subscribeToBases(setBases);
 
     return () => {
       unsubPeople();
@@ -125,12 +138,14 @@ export default function App() {
             person={currentUser.staffData}
             assignments={assignments}
             attendances={attendances}
+            shifts={shifts}
             onLogout={handleLogout}
           />
         ) : currentUser?.role === 'admin' ? (
           <>
             {currentTab === 'dashboard' && (
               <DashboardView
+                shifts={shifts}
                 people={people}
                 assignments={assignments}
                 availabilities={availabilities}
@@ -146,7 +161,9 @@ export default function App() {
 
             {currentTab === 'people' && (
               <PeopleView
+                availabilities={availabilities}
                 people={people}
+                shifts={shifts}
                 isAddModalOpen={isAddPersonModalOpen}
                 setIsAddModalOpen={setIsAddPersonModalOpen}
               />
@@ -167,11 +184,14 @@ export default function App() {
                 availabilities={availabilities}
                 functions={functions}
                 requirements={requirements}
+                shifts={shifts}
+                events={events}
+                bases={bases}
               />
             )}
 
             {currentTab === 'availability' && (
-              <AvailabilityView people={people} availabilities={availabilities} />
+              <AvailabilityView people={people} availabilities={availabilities} shifts={shifts} />
             )}
 
             {currentTab === 'attendance' && (
@@ -179,11 +199,16 @@ export default function App() {
                 people={people}
                 assignments={assignments}
                 attendances={attendances}
+                shifts={shifts}
               />
             )}
 
             {currentTab === 'food' && (
-              <FoodView people={people} assignments={assignments} />
+              <FoodView people={people} assignments={assignments} shifts={shifts} />
+            )}
+
+            {currentTab === 'config' && (
+              <ConfigView shifts={shifts} events={events} bases={bases} functions={functions} />
             )}
           </>
         ) : (

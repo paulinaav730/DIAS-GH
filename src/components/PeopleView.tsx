@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Person, PersonType, GroupFunction, GtSubTeam } from '../types';
+import { Person, PersonType, GroupFunction, GtSubTeam, ConfigurableShift } from '../types';
 import { addPerson, updatePerson, deletePerson } from '../services/storageService';
 import { exportPeopleToExcel } from '../services/excelService';
 import { ExcelImportModal } from './ExcelImportModal';
@@ -27,13 +27,16 @@ import {
 
 interface PeopleViewProps {
   people: Person[];
+  shifts: ConfigurableShift[];
   functions?: GroupFunction[];
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
 }
 
 export const PeopleView: React.FC<PeopleViewProps> = ({
+  availabilities,
   people,
+  shifts,
   functions = [],
   isAddModalOpen,
   setIsAddModalOpen,
@@ -230,7 +233,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
 
           {/* Botón Exportar */}
           <button
-            onClick={() => exportPeopleToExcel(people)}
+            onClick={() => exportPeopleToExcel(people, availabilities, shifts)}
             className="min-h-[44px] px-3.5 py-2.5 rounded-2xl bg-[#FAF6EC] hover:bg-[#F3EEDC] text-[#334155] border border-[#EADDC7] font-bold text-xs flex items-center gap-1.5 transition-colors font-montserrat"
             title="Exportar a Excel"
           >
@@ -863,6 +866,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
         existingPeople={people}
+        existingShifts={shifts}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Person, Assignment, AvailabilityRecord, AttendanceRecord } from '../types';
-import { EVENT_SCHEDULE, CARNIVAL_PHYSICAL_BASES, THE_GAMES_PHYSICAL_BASES } from '../data/eventStructure';
+import { Person, Assignment, AvailabilityRecord, AttendanceRecord, ConfigurableShift } from '../types';
+
 import {
   Users,
   Calendar,
@@ -21,7 +21,12 @@ import {
 import { TabType } from './Navbar';
 import { exportPeopleToExcel } from '../services/excelService';
 
+import { AppEvent, ConfigurableBase } from '../types';
+
 interface DashboardViewProps {
+  shifts: ConfigurableShift[];
+  events: AppEvent[];
+  bases: ConfigurableBase[];
   people: Person[];
   assignments: Assignment[];
   availabilities: AvailabilityRecord[];
@@ -32,6 +37,9 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
+  shifts,
+  events,
+  bases,
   people,
   assignments,
   availabilities,
@@ -92,7 +100,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const totalMeals = totalLunches + totalSnacks;
 
-  const currentDay = EVENT_SCHEDULE.find((d) => d.dayId === selectedDayId) || EVENT_SCHEDULE[0];
+  const currentDay = events.find((d) => d.dayId === selectedDayId) || events[0] || {};
 
   return (
     <div className="space-y-6">
@@ -126,7 +134,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => exportPeopleToExcel(people)}
+              onClick={() => exportPeopleToExcel(people, availabilities, shifts)}
               className="px-5 py-3 rounded-2xl bg-[#C87F17] hover:bg-[#B37012] text-white font-bold text-xs sm:text-sm font-dalek tracking-wider flex items-center gap-2 shadow-sm transition-all"
             >
               <FileSpreadsheet className="w-4 h-4" />

@@ -1,3 +1,5 @@
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db, isConfigured } from './firebase';
 import {
   Person,
   Assignment,
@@ -69,73 +71,57 @@ if (typeof window !== 'undefined') {
 }
 
 // Initialize storage
+
 export function initializeStorage(): void {
-  if (isInitialized) return;
+  if (isInitialized || !isConfigured || !db) return;
+  
+  const collections = {
+    [STORAGE_KEYS.PEOPLE]: 'people',
+    [STORAGE_KEYS.ASSIGNMENTS]: 'assignments',
+    [STORAGE_KEYS.AVAILABILITIES]: 'availabilities',
+    [STORAGE_KEYS.ATTENDANCES]: 'attendances',
+    [STORAGE_KEYS.FUNCTIONS]: 'functions',
+    [STORAGE_KEYS.REQUIREMENTS]: 'requirements',
+    [STORAGE_KEYS.EVENTS]: 'events',
+    [STORAGE_KEYS.SHIFTS]: 'shifts',
+    [STORAGE_KEYS.BASES]: 'bases',
+  };
 
-  try {
-    const rawPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
-    const rawAssignments = localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS);
-    const rawAvailabilities = localStorage.getItem(STORAGE_KEYS.AVAILABILITIES);
-    const rawAttendances = localStorage.getItem(STORAGE_KEYS.ATTENDANCES);
-    const rawFunctions = localStorage.getItem(STORAGE_KEYS.FUNCTIONS);
-    const rawRequirements = localStorage.getItem(STORAGE_KEYS.REQUIREMENTS);
-    const rawEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
-    const rawShifts = localStorage.getItem(STORAGE_KEYS.SHIFTS);
-    const rawBases = localStorage.getItem(STORAGE_KEYS.BASES);
-
-    peopleCache = rawPeople ? JSON.parse(rawPeople) : [];
-    assignmentCache = rawAssignments ? JSON.parse(rawAssignments) : [];
-    availabilityCache = rawAvailabilities ? JSON.parse(rawAvailabilities) : [];
-    attendanceCache = rawAttendances ? JSON.parse(rawAttendances) : [];
-
-    // Initialize functions with default catalog if never set
-    if (rawFunctions) {
-      functionCache = JSON.parse(rawFunctions);
-    } else {
-      functionCache = [...DEFAULT_GROUP_FUNCTIONS];
-      localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
+  const syncCache = (key: string, data: any[]) => {
+    switch(key) {
+      case STORAGE_KEYS.PEOPLE: peopleCache = data; break;
+      case STORAGE_KEYS.ASSIGNMENTS: assignmentCache = data; break;
+      case STORAGE_KEYS.AVAILABILITIES: availabilityCache = data; break;
+      case STORAGE_KEYS.ATTENDANCES: attendanceCache = data; break;
+      case STORAGE_KEYS.FUNCTIONS: functionCache = data; break;
+      case STORAGE_KEYS.REQUIREMENTS: requirementCache = data; break;
+      case STORAGE_KEYS.EVENTS: eventsCache = data; break;
+      case STORAGE_KEYS.SHIFTS: shiftsCache = data; break;
+      case STORAGE_KEYS.BASES: basesCache = data; break;
     }
+    notifyAll();
+  };
 
-    requirementCache = rawRequirements ? JSON.parse(rawRequirements) : [];
-
-    // Initialize events with defaults if not set
-    if (rawEvents) {
-      eventsCache = JSON.parse(rawEvents);
-    } else {
-      eventsCache = [...DEFAULT_INITIAL_EVENTS];
-      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(eventsCache));
-    }
-
-    // Initialize shifts with defaults if not set
-    if (rawShifts) {
-      shiftsCache = JSON.parse(rawShifts);
-    } else {
-      shiftsCache = [...DEFAULT_INITIAL_SHIFTS];
-      localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
-    }
-
-    // Initialize bases with defaults if not set
-    if (rawBases) {
-      basesCache = JSON.parse(rawBases);
-    } else {
-      basesCache = [...DEFAULT_INITIAL_BASES];
-      localStorage.setItem(STORAGE_KEYS.BASES, JSON.stringify(basesCache));
-    }
-  } catch (error) {
-    console.error('Error loading data from storage:', error);
-    peopleCache = [];
-    assignmentCache = [];
-    availabilityCache = [];
-    attendanceCache = [];
-    functionCache = [...DEFAULT_GROUP_FUNCTIONS];
-    requirementCache = [];
-    eventsCache = [...DEFAULT_INITIAL_EVENTS];
-    shiftsCache = [...DEFAULT_INITIAL_SHIFTS];
-    basesCache = [...DEFAULT_INITIAL_BASES];
-  }
-
+  Object.entries(collections).forEach(([key, colName]) => {
+    onSnapshot(collection(db, colName), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      syncCache(key, data);
+    }, (err) => console.error("Firebase sync error:", err));
+  });
+  
   isInitialized = true;
-  notifyAll();
+}
+
+
+function saveToFirebase(collectionName: string, id: string, data: any) {
+  if (!isConfigured || !db) return;
+  const cleanData = JSON.parse(JSON.stringify(data)); // Removes undefined values
+  setDoc(doc(db, collectionName, String(id)), cleanData).catch(console.error);
+}
+
+function deleteFromFirebase(collectionName: string, id: string) {
+  if (!isConfigured || !db) return;
+  deleteDoc(doc(db, collectionName, String(id))).catch(console.error);
 }
 
 function notifyAll() {
@@ -226,15 +212,16 @@ export async function addPerson(
   };
 
   peopleCache = [...peopleCache, newPerson];
-  localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleCache));
+  saveToFirebase("people", newPerson.id, newPerson);
   peopleListeners.forEach((fn) => fn([...peopleCache]));
   return newPerson;
 }
 
 export async function updatePerson(id: string, updates: Partial<Person>): Promise<void> {
   initializeStorage();
-  peopleCache = peopleCache.map((p) => (p.id === id ? { ...p, ...updates } : p));
-  localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleCache));
+  const updated = { ...peopleCache.find(p => p.id === id), ...updates };
+  peopleCache = peopleCache.map((p) => (p.id === id ? updated : p));
+  saveToFirebase("people", id, updated);
   peopleListeners.forEach((fn) => fn([...peopleCache]));
 }
 
@@ -271,6 +258,7 @@ export async function importPeopleBatch(
           ...personData,
         };
         updated++;
+        saveToFirebase("people", peopleCache[existingIndex].id, peopleCache[existingIndex]);
       } else {
         skipped++;
       }
@@ -281,11 +269,10 @@ export async function importPeopleBatch(
         createdAt: new Date().toISOString(),
       };
       peopleCache.push(newPerson);
+      saveToFirebase("people", newPerson.id, newPerson);
       added++;
     }
   }
-
-  localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleCache));
   peopleListeners.forEach((fn) => fn([...peopleCache]));
 
   return { added, updated, skipped };
@@ -294,15 +281,14 @@ export async function importPeopleBatch(
 export async function deletePerson(id: string): Promise<void> {
   initializeStorage();
   peopleCache = peopleCache.filter((p) => p.id !== id);
+  deleteFromFirebase("people", id);
   // Also clean up their assignments, availability and attendance
+  assignmentCache.filter((a) => a.personId === id).forEach(a => deleteFromFirebase("assignments", a.id));
   assignmentCache = assignmentCache.filter((a) => a.personId !== id);
+  availabilityCache.filter((av) => av.personId === id).forEach(av => deleteFromFirebase("availabilities", av.id));
   availabilityCache = availabilityCache.filter((av) => av.personId !== id);
+  attendanceCache.filter((at) => at.personId === id).forEach(at => deleteFromFirebase("attendances", at.id));
   attendanceCache = attendanceCache.filter((at) => at.personId !== id);
-
-  localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleCache));
-  localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
-  localStorage.setItem(STORAGE_KEYS.AVAILABILITIES, JSON.stringify(availabilityCache));
-  localStorage.setItem(STORAGE_KEYS.ATTENDANCES, JSON.stringify(attendanceCache));
 
   notifyAll();
 }
@@ -335,8 +321,7 @@ export async function saveAvailability(
   } else {
     availabilityCache = [...availabilityCache, newRecord];
   }
-
-  localStorage.setItem(STORAGE_KEYS.AVAILABILITIES, JSON.stringify(availabilityCache));
+  saveToFirebase("availabilities", newRecord.id, newRecord);
   availabilityListeners.forEach((fn) => fn([...availabilityCache]));
 }
 
@@ -461,11 +446,11 @@ export async function assignPerson(
     assignmentCache = assignmentCache.map((a, idx) =>
       idx === existingIndex ? newAssignment : a
     );
+    saveToFirebase("assignments", newAssignment.id, newAssignment);
   } else {
     assignmentCache = [...assignmentCache, newAssignment];
+  saveToFirebase("assignments", newAssignment.id, newAssignment);
   }
-
-  localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
   assignmentListeners.forEach((fn) => fn([...assignmentCache]));
 
   return { success: true, assignment: newAssignment };
@@ -474,7 +459,7 @@ export async function assignPerson(
 export async function removeAssignment(assignmentId: string): Promise<void> {
   initializeStorage();
   assignmentCache = assignmentCache.filter((a) => a.id !== assignmentId);
-  localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
+  deleteFromFirebase("assignments", assignmentId);
   assignmentListeners.forEach((fn) => fn([...assignmentCache]));
 }
 
@@ -490,7 +475,35 @@ export async function addGroupFunction(
   };
 
   functionCache = [...functionCache, newFn];
-  localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
+  saveToFirebase("functions", newFn.id, newFn);
+  functionListeners.forEach((fn) => fn([...functionCache]));
+  return newFn;
+}
+
+export async function saveGroupFunction(
+  data: Partial<GroupFunction> & { name: string; category: string }
+): Promise<GroupFunction> {
+  initializeStorage();
+  const id = data.id || 'fn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const existingIdx = functionCache.findIndex((f) => f.id === id);
+  
+  const newFn: GroupFunction = {
+    ...data,
+    id,
+    name: data.name,
+    description: data.description || '',
+    category: data.category as any,
+    isActive: data.isActive !== undefined ? data.isActive : true,
+    createdAt: existingIdx >= 0 ? functionCache[existingIdx].createdAt : new Date().toISOString(),
+  };
+
+  if (existingIdx >= 0) {
+    functionCache[existingIdx] = newFn;
+  } else {
+    functionCache.push(newFn);
+  }
+  
+  saveToFirebase("functions", id, newFn);
   functionListeners.forEach((fn) => fn([...functionCache]));
   return newFn;
 }
@@ -500,8 +513,9 @@ export async function updateGroupFunction(
   updates: Partial<GroupFunction>
 ): Promise<void> {
   initializeStorage();
-  functionCache = functionCache.map((f) => (f.id === id ? { ...f, ...updates } : f));
-  localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
+  const updated = { ...functionCache.find(f => f.id === id), ...updates };
+  functionCache = functionCache.map((f) => (f.id === id ? updated : f));
+  saveToFirebase("functions", id, updated);
   functionListeners.forEach((fn) => fn([...functionCache]));
 }
 
@@ -510,7 +524,8 @@ export async function toggleGroupFunctionActive(id: string): Promise<void> {
   functionCache = functionCache.map((f) =>
     f.id === id ? { ...f, isActive: !f.isActive } : f
   );
-  localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
+  const updatedFn = functionCache.find(f => f.id === id);
+  if (updatedFn) saveToFirebase("functions", id, updatedFn);
   functionListeners.forEach((fn) => fn([...functionCache]));
 }
 
@@ -568,7 +583,7 @@ export async function deleteGroupFunction(
   }
 
   functionCache = functionCache.filter((f) => f.id !== id);
-  localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
+  deleteFromFirebase("functions", id);
   functionListeners.forEach((fn) => fn([...functionCache]));
   return { success: true };
 }
@@ -576,7 +591,6 @@ export async function deleteGroupFunction(
 export async function restoreDefaultFunctions(): Promise<void> {
   initializeStorage();
   functionCache = [...DEFAULT_GROUP_FUNCTIONS];
-  localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
   functionListeners.forEach((fn) => fn([...functionCache]));
 }
 
@@ -599,8 +613,7 @@ export async function saveShiftRequirement(
   } else {
     requirementCache = [...requirementCache, newReq];
   }
-
-  localStorage.setItem(STORAGE_KEYS.REQUIREMENTS, JSON.stringify(requirementCache));
+  saveToFirebase("requirements", newReq.id, newReq);
   requirementListeners.forEach((fn) => fn([...requirementCache]));
   return newReq;
 }
@@ -608,7 +621,7 @@ export async function saveShiftRequirement(
 export async function deleteShiftRequirement(id: string): Promise<void> {
   initializeStorage();
   requirementCache = requirementCache.filter((r) => r.id !== id);
-  localStorage.setItem(STORAGE_KEYS.REQUIREMENTS, JSON.stringify(requirementCache));
+  deleteFromFirebase("requirements", id);
   requirementListeners.forEach((fn) => fn([...requirementCache]));
 }
 
@@ -636,8 +649,7 @@ export async function recordAttendance(
   } else {
     attendanceCache = [...attendanceCache, newRecord];
   }
-
-  localStorage.setItem(STORAGE_KEYS.ATTENDANCES, JSON.stringify(attendanceCache));
+  saveToFirebase("attendances", newRecord.id, newRecord);
   attendanceListeners.forEach((fn) => fn([...attendanceCache]));
 }
 
@@ -764,8 +776,7 @@ export async function saveShift(
   } else {
     shiftsCache.push(newShift);
   }
-
-  localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
+  saveToFirebase("shifts", newShift.id, newShift);
   shiftListeners.forEach((fn) => fn([...shiftsCache]));
 
   return { shift: newShift, conflicts };
@@ -799,7 +810,7 @@ export async function duplicateShift(id: string): Promise<ConfigurableShift | nu
   };
 
   shiftsCache.push(duplicated);
-  localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
+  saveToFirebase("shifts", duplicated.id, duplicated);
   shiftListeners.forEach((fn) => fn([...shiftsCache]));
 
   return duplicated;
@@ -821,13 +832,13 @@ export async function deleteShift(
 
   // Remove related assignments if confirmed
   if (impact.count > 0 && removeAssignments) {
+    assignmentCache.filter((a) => a.shiftId === id).forEach(a => deleteFromFirebase("assignments", a.id));
     assignmentCache = assignmentCache.filter((a) => a.shiftId !== id);
-    localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
     assignmentListeners.forEach((fn) => fn([...assignmentCache]));
   }
 
   shiftsCache = shiftsCache.filter((s) => s.id !== id);
-  localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
+  deleteFromFirebase("shifts", id);
   shiftListeners.forEach((fn) => fn([...shiftsCache]));
 
   return { success: true };
@@ -862,8 +873,7 @@ export async function saveEvent(
   } else {
     eventsCache.push(newEvent);
   }
-
-  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(eventsCache));
+  saveToFirebase("events", newEvent.id, newEvent);
   eventListeners.forEach((fn) => fn([...eventsCache]));
   return newEvent;
 }
@@ -884,16 +894,16 @@ export async function deleteEvent(
 
   if (force && relatedShifts.length > 0) {
     const shiftIds = relatedShifts.map((s) => s.id);
+    shiftsCache.filter((s) => shiftIds.includes(s.id)).forEach(s => deleteFromFirebase("shifts", s.id));
     shiftsCache = shiftsCache.filter((s) => !shiftIds.includes(s.id));
+    assignmentCache.filter((a) => shiftIds.includes(a.shiftId)).forEach(a => deleteFromFirebase("assignments", a.id));
     assignmentCache = assignmentCache.filter((a) => !shiftIds.includes(a.shiftId));
-    localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
-    localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
     shiftListeners.forEach((fn) => fn([...shiftsCache]));
     assignmentListeners.forEach((fn) => fn([...assignmentCache]));
   }
 
   eventsCache = eventsCache.filter((e) => e.id !== id);
-  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(eventsCache));
+  deleteFromFirebase("events", id);
   eventListeners.forEach((fn) => fn([...eventsCache]));
   return { success: true };
 }
@@ -932,7 +942,6 @@ export async function saveBase(
     isActive: baseData.isActive !== undefined ? baseData.isActive : true,
     eventId: baseData.eventId,
     notes: baseData.notes || '',
-    createdAt: existingIdx >= 0 ? basesCache[existingIdx].createdAt : new Date().toISOString(),
   };
 
   if (existingIdx >= 0) {
@@ -940,8 +949,7 @@ export async function saveBase(
   } else {
     basesCache.push(newBase);
   }
-
-  localStorage.setItem(STORAGE_KEYS.BASES, JSON.stringify(basesCache));
+  saveToFirebase("bases", String(newBase.id), newBase);
   baseListeners.forEach((fn) => fn([...basesCache]));
   return newBase;
 }
@@ -961,7 +969,7 @@ export async function deleteBase(
   }
 
   basesCache = basesCache.filter((b) => String(b.id) !== String(id));
-  localStorage.setItem(STORAGE_KEYS.BASES, JSON.stringify(basesCache));
+  deleteFromFirebase("bases", String(id));
   baseListeners.forEach((fn) => fn([...basesCache]));
   return { success: true };
 }
@@ -971,10 +979,6 @@ export async function restoreDefaultSchedule(): Promise<void> {
   eventsCache = [...DEFAULT_INITIAL_EVENTS];
   shiftsCache = [...DEFAULT_INITIAL_SHIFTS];
   basesCache = [...DEFAULT_INITIAL_BASES];
-
-  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(eventsCache));
-  localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
-  localStorage.setItem(STORAGE_KEYS.BASES, JSON.stringify(basesCache));
 
   eventListeners.forEach((fn) => fn([...eventsCache]));
   shiftListeners.forEach((fn) => fn([...shiftsCache]));
@@ -1029,34 +1033,104 @@ export function importAllData(jsonString: string): boolean {
     attendanceCache = data.attendances || [];
     if (Array.isArray(data.functions)) {
       functionCache = data.functions;
-      localStorage.setItem(STORAGE_KEYS.FUNCTIONS, JSON.stringify(functionCache));
     }
     if (Array.isArray(data.requirements)) {
       requirementCache = data.requirements;
-      localStorage.setItem(STORAGE_KEYS.REQUIREMENTS, JSON.stringify(requirementCache));
     }
     if (Array.isArray(data.events)) {
       eventsCache = data.events;
-      localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(eventsCache));
     }
     if (Array.isArray(data.shifts)) {
       shiftsCache = data.shifts;
-      localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shiftsCache));
     }
     if (Array.isArray(data.bases)) {
       basesCache = data.bases;
-      localStorage.setItem(STORAGE_KEYS.BASES, JSON.stringify(basesCache));
     }
-
-    localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleCache));
-    localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignmentCache));
-    localStorage.setItem(STORAGE_KEYS.AVAILABILITIES, JSON.stringify(availabilityCache));
-    localStorage.setItem(STORAGE_KEYS.ATTENDANCES, JSON.stringify(attendanceCache));
 
     notifyAll();
     return true;
   } catch (err) {
     console.error('Failed to import data:', err);
+
     return false;
   }
+}
+
+
+import { writeBatch } from 'firebase/firestore';
+import { ExcelImportRow } from './excelService';
+
+export interface ImportBatchResult {
+  added: number;
+  updated: number;
+  skipped: number;
+  error?: string;
+}
+
+export async function importMasterExcelBatch(
+  rows: ExcelImportRow[],
+  options: { updateExisting: boolean }
+): Promise<ImportBatchResult> {
+  if (!isConfigured || !db) throw new Error('Firebase no configurado');
+  
+  const batch = writeBatch(db);
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    if (!row.isValid) continue;
+
+    if (row.isExistingDuplicate && !options.updateExisting) {
+      skipped++;
+      continue;
+    }
+
+    // 1. Person Data
+    // We try to find existing person by cedula to reuse their ID, otherwise create new ID
+    let personId = `person_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const existingP = peopleCache.find(p => p.documentId === row.cedula || p.username === row.usuario);
+    if (existingP) {
+      personId = existingP.id;
+      updated++;
+    } else {
+      added++;
+    }
+
+    const personData = {
+      id: personId,
+      name: row.nombre,
+      documentId: row.cedula,
+      username: row.usuario || row.cedula,
+      email: row.correo,
+      phone: row.celular,
+      epikId: row.epikId,
+      primaryType: row.tipo,
+      gtTeams: row.gt,
+      shirtSize: row.talla as any,
+      createdAt: existingP ? existingP.createdAt : new Date().toISOString(),
+    };
+
+    // Use setDoc with merge:true equivalent in batch
+    batch.set(doc(db, 'people', personId), personData, { merge: true });
+
+    // 2. Availability Data
+    for (const avail of row.availabilities) {
+      const availId = `${personId}_${avail.dayId}`;
+      const existingAvail = availabilityCache.find(a => a.personId === personId && a.dayId === avail.dayId);
+      
+      const availData = {
+        id: existingAvail ? existingAvail.id : availId,
+        personId,
+        dayId: avail.dayId,
+        shiftIds: avail.shiftIds, // this merges/updates the selected shifts
+        updatedAt: new Date().toISOString(),
+      };
+      
+      batch.set(doc(db, 'availabilities', availData.id), availData, { merge: true });
+    }
+  }
+
+  await batch.commit();
+  return { added, updated, skipped };
 }

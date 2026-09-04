@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Person, Assignment } from '../types';
-import { EVENT_SCHEDULE, findShiftById } from '../data/eventStructure';
+import { Person, Assignment, ConfigurableShift } from '../types';
+import { EVENT_SCHEDULE } from '../data/eventStructure';
 import { Utensils, Coffee, Sun, AlertCircle } from 'lucide-react';
 
 interface FoodViewProps {
   people: Person[];
   assignments: Assignment[];
+  shifts: ConfigurableShift[];
 }
 
-export const FoodView: React.FC<FoodViewProps> = ({ people, assignments }) => {
+export const FoodView: React.FC<FoodViewProps> = ({ people, assignments, shifts }) => {
   const [selectedDayId, setSelectedDayId] = useState<string>('lunes');
 
   const currentDay = EVENT_SCHEDULE.find((d) => d.dayId === selectedDayId) || EVENT_SCHEDULE[0];
@@ -37,7 +38,7 @@ export const FoodView: React.FC<FoodViewProps> = ({ people, assignments }) => {
 
     let totalMinutes = 0;
     personShifts.forEach((asgn) => {
-      const shiftDef = findShiftById(currentDay, asgn.shiftId);
+      const shiftDef = shifts.find(s => s.id === asgn.shiftId);
       if (shiftDef) {
         totalMinutes += getShiftDurationMinutes(shiftDef.startTime, shiftDef.endTime);
       }
@@ -193,7 +194,7 @@ export const FoodView: React.FC<FoodViewProps> = ({ people, assignments }) => {
                 {mealEntitlements.map((entry) => {
                   const shiftLabels = entry.shifts
                     .map((s) => {
-                      const def = findShiftById(currentDay, s.shiftId);
+                      const def = shifts.find(s => s.id === s.shiftId);
                       return def ? `${def.category ? `${def.category} ` : ''}${def.name}` : s.shiftId;
                     })
                     .join(', ');

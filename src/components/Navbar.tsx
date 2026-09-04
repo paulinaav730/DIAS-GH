@@ -30,7 +30,8 @@ export type TabType =
   | 'functions'
   | 'availability'
   | 'attendance'
-  | 'food';
+  | 'food'
+  | 'config';
 
 interface NavbarProps {
   currentTab: TabType;
@@ -71,7 +72,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'people', label: 'Personas', icon: Users, badge: peopleCount },
     { id: 'assignments', label: 'Turnos y Bases', icon: Grid },
     ...(isAdmin
-      ? [{ id: 'functions' as TabType, label: 'Funciones', icon: Tag, badge: functionsCount }]
+      ? [
+          { id: 'functions' as TabType, label: 'Funciones', icon: Tag, badge: functionsCount },
+          { id: 'config' as TabType, label: 'Configuración', icon: Settings },
+        ]
       : []),
     { id: 'availability', label: 'Disponibilidad', icon: Clock },
     { id: 'attendance', label: 'Control en Vivo', icon: Radio },

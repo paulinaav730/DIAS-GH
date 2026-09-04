@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Person, AvailabilityRecord } from '../types';
+import { Person, AvailabilityRecord, ConfigurableShift } from '../types';
 import {
   EVENT_SCHEDULE,
-  CARNIVAL_GT_SHIFTS,
-  CARNIVAL_GAP_SHIFTS,
   findShiftById,
 } from '../data/eventStructure';
 import { saveAvailability } from '../services/storageService';
@@ -23,11 +21,13 @@ import {
 interface AvailabilityViewProps {
   people: Person[];
   availabilities: AvailabilityRecord[];
+  shifts: ConfigurableShift[];
 }
 
 export const AvailabilityView: React.FC<AvailabilityViewProps> = ({
   people,
   availabilities,
+  shifts,
 }) => {
   const [selectedPersonId, setSelectedPersonId] = useState<string>('');
   const [selectedDayId, setSelectedDayId] = useState<string>('miercoles');
@@ -198,7 +198,7 @@ export const AvailabilityView: React.FC<AvailabilityViewProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const gapIds = CARNIVAL_GAP_SHIFTS.map((s) => s.id);
+                          const gapIds = shifts.filter(s => s.dayId === 'miercoles' && s.category === 'GAP').map((s) => s.id);
                           const remaining = selectedShifts.filter((id) => !gapIds.includes(id));
                           setSelectedShifts([...remaining, ...gapIds]);
                         }}
@@ -210,7 +210,7 @@ export const AvailabilityView: React.FC<AvailabilityViewProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {CARNIVAL_GAP_SHIFTS.map((shift) => {
+                    {shifts.filter(s => s.dayId === 'miercoles' && s.category === 'GAP').map((shift) => {
                       const isChecked = selectedShifts.includes(shift.id);
                       return (
                         <div
@@ -268,7 +268,7 @@ export const AvailabilityView: React.FC<AvailabilityViewProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const gtIds = CARNIVAL_GT_SHIFTS.map((s) => s.id);
+                          const gtIds = shifts.filter(s => s.dayId === 'miercoles' && s.category === 'GT').map((s) => s.id);
                           const remaining = selectedShifts.filter((id) => !gtIds.includes(id));
                           setSelectedShifts([...remaining, ...gtIds]);
                         }}
@@ -280,7 +280,7 @@ export const AvailabilityView: React.FC<AvailabilityViewProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {CARNIVAL_GT_SHIFTS.map((shift) => {
+                    {shifts.filter(s => s.dayId === 'miercoles' && s.category === 'GT').map((shift) => {
                       const isChecked = selectedShifts.includes(shift.id);
                       return (
                         <div

@@ -78,6 +78,7 @@ export interface Person {
   email: string;
   phone?: string;
   primaryType: PersonType; // GT (GRUPO DE TRABAJO), GAP (GRUPO DE APOYO), or MESA
+  epikId?: string; // EPIK ID from Excel
   gtTeams?: string[]; // Multiple GT teams: e.g. ["Logística", "Seguridad"]
   gtSubTeam?: GtSubTeam; // Main GT sub-team if GT
   functions?: string[]; // Multiple functions: e.g. ["Montaje", "Apoyo logístico"]

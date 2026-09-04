@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Person, Assignment, AttendanceRecord, AttendanceStatus } from '../types';
-import { EVENT_SCHEDULE, getBaseDisplayName, findShiftById } from '../data/eventStructure';
+import { Person, Assignment, AttendanceRecord, AttendanceStatus, ConfigurableShift } from '../types';
+import { EVENT_SCHEDULE, getBaseDisplayName } from '../data/eventStructure';
 import { recordAttendance } from '../services/storageService';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Calendar, Users, Filter } from 'lucide-react';
 
@@ -8,12 +8,14 @@ interface AttendanceViewProps {
   people: Person[];
   assignments: Assignment[];
   attendances: AttendanceRecord[];
+  shifts: ConfigurableShift[];
 }
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({
   people,
   assignments,
   attendances,
+  shifts,
 }) => {
   const [selectedDayId, setSelectedDayId] = useState<string>('miercoles');
   const [selectedShiftId, setSelectedShiftId] = useState<string>('miercoles-gt-t1');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Person, Assignment, AttendanceRecord } from '../types';
-import { EVENT_SCHEDULE, getBaseDisplayName, findShiftById } from '../data/eventStructure';
+import { Person, Assignment, AttendanceRecord, ConfigurableShift } from '../types';
+import { EVENT_SCHEDULE, getBaseDisplayName } from '../data/eventStructure';
 import {
   User,
   Calendar,
@@ -18,6 +18,7 @@ interface StaffMyDiasViewProps {
   person: Person;
   assignments: Assignment[];
   attendances: AttendanceRecord[];
+  shifts: ConfigurableShift[];
   onLogout: () => void;
 }
 
@@ -25,6 +26,7 @@ export const StaffMyDiasView: React.FC<StaffMyDiasViewProps> = ({
   person,
   assignments,
   attendances,
+  shifts,
   onLogout,
 }) => {
   const [activeDayId, setActiveDayId] = useState<string>('lunes');
@@ -50,7 +52,7 @@ export const StaffMyDiasView: React.FC<StaffMyDiasViewProps> = ({
     let totalMinutes = 0;
 
     dayAssignments.forEach((asgn) => {
-      const shiftDef = findShiftById(dayDef, asgn.shiftId);
+      const shiftDef = shifts.find(s => s.id === asgn.shiftId);
       if (shiftDef) {
         totalMinutes += getShiftDurationMinutes(shiftDef.startTime, shiftDef.endTime);
       }
@@ -227,7 +229,7 @@ export const StaffMyDiasView: React.FC<StaffMyDiasViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {currentDaySummary.dayAssignments.map((asgn) => {
               const shiftDef = currentDaySummary.dayDef
-                ? findShiftById(currentDaySummary.dayDef, asgn.shiftId)
+                ? shifts.find(s => s.id === asgn.shiftId)
                 : undefined;
               const attendance = attendances.find(
                 (at) =>

@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Person, PersonType } from '../types';
+import { Person, PersonType, ConfigurableShift } from '../types';
 import {
   parseExcelFile,
   downloadExcelTemplate,
   ExcelImportPreview,
   ExcelImportRow,
 } from '../services/excelService';
-import { importPeopleBatch, ImportBatchResult } from '../services/storageService';
+import { importMasterExcelBatch, ImportBatchResult } from '../services/storageService';
 import {
   FileSpreadsheet,
   UploadCloud,
@@ -24,6 +24,7 @@ interface ExcelImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   existingPeople: Person[];
+  existingShifts: ConfigurableShift[];
   onImportComplete?: () => void;
 }
 
@@ -31,6 +32,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
   isOpen,
   onClose,
   existingPeople,
+  existingShifts,
   onImportComplete,
 }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -49,7 +51,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     setImportResult(null);
 
     try {
-      const parsedPreview = await parseExcelFile(selectedFile, existingPeople);
+      const parsedPreview = await parseExcelFile(selectedFile, existingPeople, existingShifts);
       setPreview(parsedPreview);
     } catch (err) {
       console.error('Error parsing excel file:', err);
@@ -73,40 +75,12 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
 
     setIsConfirming(true);
     try {
-      // Filter only valid rows
-      const validRowsToImport = preview.rows
-        .filter((r) => r.isValid)
-        .map((r) => {
-          // Parse GT teams and functions
-          const gtTeams = r.gt
-            ? r.gt.split(/[,/]/).map((s) => s.trim()).filter(Boolean)
-            : [];
-          const functions = r.funciones
-            ? r.funciones.split(/[,/]/).map((s) => s.trim()).filter(Boolean)
-            : [];
-
-          return {
-            name: r.nombre,
-            documentId: r.cedula,
-            username: r.usuario || r.cedula,
-            email: r.correo,
-            phone: r.celular,
-            primaryType: (r.tipo || 'GT') as PersonType,
-            gtTeams,
-            functions,
-            roleTitle: 'Staff',
-            shirtSize: 'M' as const,
-            dietaryRestrictions: 'Ninguna',
-            notes: r.gt || r.funciones ? `GT: ${r.gt} • Funciones: ${r.funciones}` : '',
-          };
-        });
-
-      const result = await importPeopleBatch(validRowsToImport, { updateExisting });
+      const result = await importMasterExcelBatch(preview.rows, { updateExisting });
       setImportResult(result);
       if (onImportComplete) onImportComplete();
     } catch (err) {
-      console.error('Error importing people batch:', err);
-      alert('Hubo un error al guardar las personas.');
+      console.error('Error importing master batch:', err);
+      alert('Hubo un error al guardar los datos.');
     } finally {
       setIsConfirming(false);
     }
@@ -137,13 +111,13 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
           </div>
           <div>
             <span className="text-[10px] uppercase font-bold text-[#C87F17] tracking-wider font-montserrat">
-              Carga Masiva • DÍAS EAFIT
+              EXCEL MAESTRO • DÍAS EAFIT
             </span>
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#182535] font-dalek tracking-wider">
-              IMPORTAR PERSONAS DESDE EXCEL
+              IMPORTAR EXCEL MAESTRO (PERSONAS Y DISPONIBILIDAD)
             </h2>
             <p className="text-xs text-[#64748B] font-montserrat mt-0.5">
-              Sube tu planilla de cálculo (.xlsx, .xls o .csv). Los documentos se crearán individualmente sin alterar registros previos.
+              Sube tu Excel Maestro. Se crearán o actualizarán personas y su disponibilidad por turnos sin borrar asignaciones previas.
             </p>
           </div>
         </div>
@@ -179,7 +153,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                   ARRASTRA TU ARCHIVO AQUÍ O HAZ CLIC PARA SELECCIONAR
                 </p>
                 <p className="text-xs text-[#64748B] font-montserrat mt-1 max-w-md">
-                  Formatos compatibles: .xlsx, .xls, .csv. Columnas sugeridas: <b>Nombre, Correo, Celular, Cédula, Usuario, Tipo, GT, Funciones</b>.
+                  Formatos compatibles: .xlsx, .xls, .csv. Utiliza la plantilla oficial con las 12 columnas requeridas.
                 </p>
 
                 {isLoading && (
@@ -324,7 +298,8 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                         <th className="p-2.5">Cédula</th>
                         <th className="p-2.5">Usuario</th>
                         <th className="p-2.5">Tipo</th>
-                        <th className="p-2.5">GT / Funciones</th>
+                        <th className="p-2.5">GT / EPIK</th>
+                        <th className="p-2.5">Disponibilidad</th>
                         <th className="p-2.5">Detalle</th>
                       </tr>
                     </thead>
@@ -373,7 +348,21 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                             </span>
                           </td>
                           <td className="p-2.5 text-[#64748B] text-[11px]">
-                            {row.gt || row.funciones ? `${row.gt || ''} ${row.funciones || ''}` : '—'}
+                            <div className="font-bold">{row.gt?.join(', ') || '—'}</div>
+                            <div>{row.epikId || 'Sin EPIK'}</div>
+                          </td>
+                          <td className="p-2.5 text-[11px] text-[#334155]">
+                            {row.availabilities && row.availabilities.length > 0 ? (
+                              <div className="flex flex-col gap-0.5">
+                                {row.availabilities.map(a => (
+                                  <span key={a.dayId} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-md text-[9px] font-bold">
+                                    {a.dayId.toUpperCase()}: {a.shiftIds.length} turnos
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Sin disp.</span>
+                            )}
                           </td>
                           <td className="p-2.5 text-[11px]">
                             {row.errors.length > 0 ? (

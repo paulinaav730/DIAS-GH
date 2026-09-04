@@ -1,5 +1,5 @@
-import * as XLSX from 'xlsx';
-import { Person, PersonType, ConfigurableShift, AvailabilityRecord } from '../types';
+code = """import * as XLSX from 'xlsx';
+import { Person, PersonType, ConfigurableShift } from '../types';
 
 export interface ParsedAvailability {
   dayId: string;
@@ -62,7 +62,7 @@ function determineType(gtArray: string[]): PersonType {
 
 function parseShifts(cellValue: string, dayId: string, existingShifts: ConfigurableShift[], personType: PersonType): string[] {
   if (!cellValue) return [];
-  const parts = cellValue.split(/[,;\\/\\+]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+  const parts = cellValue.split(/[,\\/\\+]/).map(s => s.trim().toLowerCase()).filter(Boolean);
   const matchedIds = new Set<string>();
   
   const dayShifts = existingShifts.filter(s => s.dayId === dayId && (s.category === personType || s.category === 'MESA'));
@@ -106,7 +106,7 @@ export async function parseExcelFile(
     const dayData: Record<string, string> = {};
 
     for (const [key, val] of Object.entries(rawRow)) {
-      const k = key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      const k = key.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();
       const v = cleanVal(val);
       
       if (k.includes('nombre')) nombre = v;
@@ -128,14 +128,14 @@ export async function parseExcelFile(
     }
 
     if (!nombre) errors.push('Nombre es obligatorio.');
-    cedula = cedula.replace(/\D/g, '');
+    cedula = cedula.replace(/\\D/g, '');
     if (!cedula) errors.push('Documento de identidad (cédula) es obligatorio.');
 
-    const nameParts = nombre.toLowerCase().split(/\s+/);
+    const nameParts = nombre.toLowerCase().split(/\\s+/);
     const usuario = nameParts[0] + (nameParts[1] ? nameParts[1][0] : '') + (cedula.slice(-3) || '');
     if (!correo) correo = `${usuario}@eafit.edu.co`;
 
-    const gtArray = gtStr.split(/[,\/]/).map(s => s.trim()).filter(Boolean);
+    const gtArray = gtStr.split(/[,\\/]/).map(s => s.trim()).filter(Boolean);
     const tipo = determineType(gtArray);
 
     const isExistingDuplicate = existingCedulas.has(cedula) || existingUsuarios.has(usuario);
@@ -191,45 +191,27 @@ export function downloadExcelTemplate(): void {
   XLSX.writeFile(workbook, 'Plantilla_Maestro_DIAS_2026.xlsx');
 }
 
-export function exportPeopleToExcel(people: Person[], availabilities: AvailabilityRecord[], shifts: ConfigurableShift[]): void {
-  const exportData = people.map((p, idx) => {
-    // Collect availability for this person
-    const personAvails = availabilities.filter(a => a.personId === p.id);
-    const dayData: Record<string, string> = {
-      'lunes': '',
-      'martes': '',
-      'miercoles': '',
-      'jueves': '',
-      'viernes': ''
-    };
-    
-    personAvails.forEach(av => {
-      const shiftNames = av.shiftIds
-        .map(sId => shifts.find(s => s.id === sId)?.label || sId)
-        .join(';');
-      if (dayData[av.dayId] !== undefined) {
-        dayData[av.dayId] = shiftNames;
-      }
-    });
-
-    return {
-      'Nombre': p.name,
-      'Número de celular': p.phone || '',
-      'Documento de identidad': p.documentId,
-      'Correo institucional': p.email,
-      'ID de EPIK': p.epikId || '',
-      '¿A que GT perteneces?': p.primaryType === 'GT' ? (p.gtTeams || []).join(', ') : p.primaryType,
-      'Talla de camiseta': p.shirtSize || 'M',
-      'THE SHOW LUNES': dayData['lunes'],
-      'THE ZONE MARTES': dayData['martes'],
-      'CARNIVAL MIERCOLES': dayData['miercoles'],
-      'THE GAMES JUEVES': dayData['jueves'],
-      'THE GAMES VIERNES': dayData['viernes']
-    };
-  });
+export function exportPeopleToExcel(people: Person[]): void {
+  const exportData = people.map((p, idx) => ({
+    N: idx + 1,
+    'Nombre': p.name,
+    'Documento': p.documentId,
+    'Usuario': p.username || p.documentId,
+    'Correo': p.email,
+    'Celular': p.phone || '',
+    'ID de EPIK': p.epikId || '',
+    'Tipo': p.primaryType,
+    'GT': (p.gtTeams || []).join(', '),
+    'Talla de camiseta': p.shirtSize || 'M',
+  }));
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Directorio DÍAS');
   XLSX.writeFile(workbook, `Personas_DIAS_EAFIT_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
+"""
+
+with open('src/services/excelService.ts', 'w') as f:
+    f.write(code)
+

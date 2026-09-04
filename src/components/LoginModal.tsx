@@ -55,7 +55,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    setErrorMessage('Credenciales de Administrador incorrectas. Usuario: DIAS2026 / Contraseña: ***');
+    setErrorMessage('Credenciales de Administrador incorrectas. Verifique su usuario y contraseña.');
   };
 
   const handleStaffSubmit = (e: React.FormEvent) => {
@@ -70,16 +70,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    // Lookup person by username, email or documentId
+    // Lookup person by email prefix
     const foundPerson = people.find((p) => {
-      const matchUsername = p.username && p.username.toLowerCase().trim() === userQuery;
-      const matchEmail = p.email && p.email.toLowerCase().trim() === userQuery;
-      const cleanDoc = p.documentId.trim().replace(/\D/g, '');
-      const matchDoc = cleanDoc === userQuery.replace(/\D/g, '') || p.documentId.trim() === userQuery;
+      const emailPrefix = p.email ? p.email.split('@')[0].toLowerCase().trim() : '';
+      const matchEmailPrefix = emailPrefix === userQuery;
 
-      if (!matchUsername && !matchEmail && !matchDoc) return false;
+      if (!matchEmailPrefix) return false;
 
-      // Validate password against documentId (cédula)
+      // Ensure password matches cedula
       const personDocClean = p.documentId.trim().replace(/\D/g, '');
       const isPassCorrect =
         passQuery === personDocClean || staffPassword.trim() === p.documentId.trim();
@@ -178,7 +176,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   required
                   value={adminUser}
                   onChange={(e) => setAdminUser(e.target.value)}
-                  placeholder="DIAS2026"
+                  placeholder="Usuario admin"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#FAF6EC] border border-[#E5DAC0] text-xs text-[#182535] placeholder-[#94A3B8] focus:outline-hidden focus:border-[#B83A24] font-montserrat font-semibold"
                 />
                 <User className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-3" />
@@ -225,7 +223,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   required
                   value={staffUsername}
                   onChange={(e) => setStaffUsername(e.target.value)}
-                  placeholder="Tu usuario asignado o correo"
+                  placeholder="Ej. esteban (sin @eafit.edu.co)"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#FAF6EC] border border-[#E5DAC0] text-xs text-[#182535] placeholder-[#94A3B8] focus:outline-hidden focus:border-[#B83A24] font-montserrat"
                 />
                 <User className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-3" />

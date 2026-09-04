@@ -2,19 +2,18 @@ import React, { useState, useMemo } from 'react';
 import {
   Person,
   Assignment,
-  PhysicalBase,
+  ConfigurableBase,
   GroupFunction,
   ShiftRequirement,
   GtSubTeam,
   PersonType,
   AvailabilityRecord,
+  ConfigurableShift,
 } from '../types';
 import {
   EVENT_SCHEDULE,
   CARNIVAL_PHYSICAL_BASES,
   THE_GAMES_PHYSICAL_BASES,
-  CARNIVAL_GT_SHIFTS,
-  CARNIVAL_GAP_SHIFTS,
   getBaseDisplayName,
   findShiftById,
   doShiftsOverlap,
@@ -48,12 +47,17 @@ import {
   UserCheck,
 } from 'lucide-react';
 
+import { AppEvent, ConfigurableBase } from '../types';
+
 interface AssignmentViewProps {
   people: Person[];
   assignments: Assignment[];
   availabilities?: AvailabilityRecord[];
   functions?: GroupFunction[];
   requirements?: ShiftRequirement[];
+  shifts: ConfigurableShift[];
+  events: AppEvent[];
+  bases: ConfigurableBase[];
 }
 
 export const AssignmentView: React.FC<AssignmentViewProps> = ({
@@ -62,6 +66,9 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
   availabilities = [],
   functions = [],
   requirements = [],
+  shifts,
+  events,
+  bases,
 }) => {
   const [selectedDayId, setSelectedDayId] = useState<string>('miercoles');
   // Sub-category selector for CARNIVAL: GAP, GT, MESA
@@ -90,22 +97,19 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isContinuityLocked, setIsContinuityLocked] = useState(false);
 
-  const currentDay = EVENT_SCHEDULE.find((d) => d.dayId === selectedDayId) || EVENT_SCHEDULE[0];
+  const currentDay = events.find((d) => d.dayId === selectedDayId) || events[0] || {};
   const isCarnival = currentDay.isCarnival;
 
   // Active shifts available in this view
   const availableShifts = isCarnival
-    ? carnivalCategory === 'GAP'
-      ? CARNIVAL_GAP_SHIFTS
-      : carnivalCategory === 'GT'
-      ? CARNIVAL_GT_SHIFTS
-      : [...CARNIVAL_GT_SHIFTS, ...CARNIVAL_GAP_SHIFTS]
-    : currentDay.shifts;
+    ? shifts.filter((s) => s.dayId === selectedDayId && (carnivalCategory === 'GAP' ? s.category === 'GAP' : carnivalCategory === 'GT' ? s.category === 'GT' : true))
+    : shifts.filter((s) => s.dayId === selectedDayId);
 
   // Current active shift object
   const activeShift =
     availableShifts.find((s) => s.id === selectedShiftId) || availableShifts[0];
 
+  if (!activeShift) { return (<div className="flex flex-col items-center justify-center p-10 h-full text-center space-y-4"><h2 className="text-xl font-bold text-[#182535]">No hay turnos disponibles</h2><p className="text-[#64748B]">No se encontraron turnos configurados para este día. Por favor, asegúrate de crear los turnos en la pestaña de Configuración.</p></div>); }
   const handleDaySelect = (dayId: string) => {
     setSelectedDayId(dayId);
     setSelectedBaseNumber(null);
@@ -118,9 +122,10 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
         setSelectedShiftId('miercoles-gt-t1');
       }
     } else {
-      const dayObj = EVENT_SCHEDULE.find((d) => d.dayId === dayId);
-      if (dayObj && dayObj.shifts.length > 0) {
-        setSelectedShiftId(dayObj.shifts[0].id);
+      const dayObj = events.find((d) => d.dayId === dayId);
+      const dayShifts = shifts.filter(s => s.dayId === dayId);
+      if (dayShifts.length > 0) {
+        setSelectedShiftId(dayShifts[0].id);
       }
     }
   };
@@ -138,14 +143,14 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
   };
 
   // Determine physical bases for current day & category
-  let physicalBases: PhysicalBase[] = [];
+  let physicalBases: ConfigurableBase[] = [];
   if (isCarnival) {
     if (carnivalCategory === 'GAP') {
       physicalBases = CARNIVAL_PHYSICAL_BASES; // Exactly 30 bases
     }
   } else if (
-    (selectedDayId === 'jueves' && activeShift.id === 'jueves-t2') ||
-    (selectedDayId === 'viernes' && activeShift.id === 'viernes-gap')
+    (selectedDayId === 'jueves' && activeShift?.id === 'jueves-t2') ||
+    (selectedDayId === 'viernes' && activeShift?.id === 'viernes-gap')
   ) {
     physicalBases = THE_GAMES_PHYSICAL_BASES; // Exactly 15 bases
   }
@@ -153,16 +158,16 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
   // Active requirements for this day and shift
   const currentShiftRequirements = useMemo(() => {
     return requirements.filter(
-      (r) => r.dayId === selectedDayId && r.shiftId === activeShift.id
+      (r) => r.dayId === selectedDayId && r.shiftId === activeShift?.id
     );
-  }, [requirements, selectedDayId, activeShift.id]);
+  }, [requirements, selectedDayId, activeShift?.id]);
 
   // Assignments for current shift
   const currentShiftAssignments = useMemo(() => {
     return assignments.filter(
-      (a) => a.dayId === selectedDayId && a.shiftId === activeShift.id
+      (a) => a.dayId === selectedDayId && a.shiftId === activeShift?.id
     );
-  }, [assignments, selectedDayId, activeShift.id]);
+  }, [assignments, selectedDayId, activeShift?.id]);
 
   // Open Requirement Creation Modal
   const handleOpenCreateRequirement = () => {
@@ -181,7 +186,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
 
     await saveShiftRequirement({
       dayId: selectedDayId,
-      shiftId: activeShift.id,
+      shiftId: activeShift?.id,
       groupType: reqGroupType,
       gtSubTeam: reqGroupType === 'GT' ? reqGtSubTeam : undefined,
       capacity: reqCapacity,
@@ -286,7 +291,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
         (a) =>
           a.personId === person.id &&
           a.dayId === selectedDayId &&
-          a.shiftId === activeShift.id
+          a.shiftId === activeShift?.id
       );
 
       // 3. Overlapping shift conflict on the same day
@@ -294,7 +299,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
         if (
           a.personId !== person.id ||
           a.dayId !== selectedDayId ||
-          a.shiftId === activeShift.id
+          a.shiftId === activeShift?.id
         ) {
           return false;
         }
@@ -307,7 +312,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
         (av) => av.personId === person.id && av.dayId === selectedDayId
       );
       const isAvailableInShift = availRecord
-        ? availRecord.shiftIds.includes(activeShift.id)
+        ? availRecord.shiftIds.includes(activeShift?.id)
         : true; // if no availability form filed, not strictly disqualifying but highlighted
 
       // 5. Functions check (Rule 5 & 9)
@@ -357,7 +362,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
       const result = await assignPerson({
         personId: candidatePerson.id,
         dayId: selectedDayId,
-        shiftId: activeShift.id,
+        shiftId: activeShift?.id,
         assignedType: activeRequirement ? activeRequirement.groupType : candidatePerson.primaryType,
         gtSubTeam: activeRequirement?.gtSubTeam || candidatePerson.gtSubTeam,
         assignedFunction: fnName || undefined,
@@ -607,7 +612,7 @@ export const AssignmentView: React.FC<AssignmentViewProps> = ({
         {/* Turnos pills */}
         <div className="flex flex-wrap items-center gap-2">
           {availableShifts.map((shift) => {
-            const isSelected = shift.id === activeShift.id;
+            const isSelected = shift.id === activeShift?.id;
             const shiftAssignCount = assignments.filter(
               (a) => a.dayId === selectedDayId && a.shiftId === shift.id
             ).length;
